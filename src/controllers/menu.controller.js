@@ -1,6 +1,6 @@
 const { Menu } = require("../models");
 const fs = require("fs");
-const path = require("path");
+const cloudinary = require("../middleware/cloudinary");
 
 const getAllMenus = async (req, res) => {
 	try {
@@ -27,9 +27,11 @@ const getOneMenu = async (req, res) => {
 const createMenu = async (req, res) => {
 	try {
 		const { nama, harga, deskripsi, kategori } = req.body;
+		const filePath = req.file.path;
 
-		console.log("data kategori:", kategori);
-		const gambar = req.file.filename;
+		const result = await cloudinary.uploader.upload(filePath);
+
+		const gambar = result.secure_url;
 
 		const menu = await Menu.create({
 			nama,
@@ -38,12 +40,13 @@ const createMenu = async (req, res) => {
 			gambar,
 			kategori,
 		});
-		res.status(201).json(menu);
+
+		fs.unlinkSync(filePath);
+
+		return res.status(201).json(menu);
 	} catch (error) {
 		if (req.file) {
-			fs.unlinkSync(
-				path.join(__dirname, "../../", "uploads", req.file.filename)
-			);
+			fs.unlinkSync(req.file.path);
 		}
 		res.status(500).json({ message: error.message });
 	}
@@ -57,21 +60,22 @@ const updateMenu = async (req, res) => {
 
 		const menu = await Menu.findByPk(id);
 		if (!menu) {
-			if (req.file) {
-				fs.unlinkSync(
-					path.join(__dirname, "../../", "uploads", req.file.filename)
-				);
-			}
 			return res.status(404).json({ message: "Menu not found" });
 		}
 
 		if (req.file) {
-			gambar = req.file.filename;
+			const result = await cloudinary.uploader.upload(req.file.path);
+			gambar = result.secure_url;
+
+			// Delete the old image from Cloudinary
+			const oldGambar = menu.gambar;
+			if (oldGambar) {
+				const publicId = oldGambar.split("/").pop().split(".")[0];
+				await cloudinary.uploader.destroy(publicId);
+			}
 		} else {
 			gambar = menu.gambar;
 		}
-
-		const oldGambar = menu.gambar;
 
 		await Menu.update(
 			{
@@ -86,25 +90,11 @@ const updateMenu = async (req, res) => {
 			}
 		);
 
-		if (req.file && oldGambar) {
-			const oldGambarPath = path.join(
-				__dirname,
-				"../../",
-				"uploads",
-				oldGambar
-			);
-			if (fs.existsSync(oldGambarPath)) {
-				fs.unlinkSync(oldGambarPath);
-			}
-		}
-
 		const updatedMenu = await Menu.findByPk(id);
 		res.status(200).json({ updatedMenu, message: "Menu updated" });
 	} catch (error) {
 		if (req.file) {
-			fs.unlinkSync(
-				path.join(__dirname, "../../", "uploads", req.file.filename)
-			);
+			fs.unlinkSync(req.file.path);
 		}
 		res.status(500).json({ message: error.message });
 	}
@@ -124,7 +114,8 @@ const deleteMenu = async (req, res) => {
 			return res.status(404).json({ message: "Menu not found" });
 		}
 		if (gambar) {
-			fs.unlinkSync(path.join(__dirname, "../../", "uploads", gambar));
+			const publicId = gambar.split("/").pop().split(".")[0];
+			await cloudinary.uploader.destroy(publicId);
 		}
 
 		res.status(204).json({ message: "Menu deleted" });

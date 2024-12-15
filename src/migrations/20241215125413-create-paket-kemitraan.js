@@ -2,28 +2,25 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
 	async up(queryInterface, Sequelize) {
-		await queryInterface.createTable("Menus", {
+		await queryInterface.createTable("Paket_Kemitraans", {
 			id: {
 				allowNull: false,
 				autoIncrement: true,
 				primaryKey: true,
 				type: Sequelize.INTEGER,
 			},
-			nama: {
+			jenis_kemitraan: {
 				type: Sequelize.STRING,
 			},
 			harga: {
-				type: Sequelize.INTEGER,
-			},
-			deskripsi: {
-				type: Sequelize.TEXT,
+				type: Sequelize.STRING,
 			},
 			gambar: {
 				type: Sequelize.STRING,
 			},
-			kategori: {
-				type: Sequelize.ENUM("makanan", "minuman", "topping"),
-			},
+      ukuran: {
+        type: Sequelize.STRING,
+      },
 			createdAt: {
 				allowNull: false,
 				type: Sequelize.DATE,
@@ -35,6 +32,6 @@ module.exports = {
 		});
 	},
 	async down(queryInterface, Sequelize) {
-		await queryInterface.dropTable("Menus");
+		await queryInterface.dropTable("Paket_Kemitraans");
 	},
 };
