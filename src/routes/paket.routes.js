@@ -8,14 +8,10 @@ const {
 } = require("../controllers/paket-kemitraan.controller");
 const upload = require("../middleware/multer");
 
-route.get("/paket-kemitraans", getAllPaketKemitraan);
-route.get("/paket-kemitraan/:id", getOnePaketKemitraan);
-route.post("/paket-kemitraan", upload.single("gambar"), createPaketKemitraan);
-route.put(
-	"/paket-kemitraan/:id",
-	upload.single("gambar"),
-	updatePaketKemitraan
-);
-route.delete("/paket-kemitraan/:id", deletePaketKemitraan);
+route.get("/", getAllPaketKemitraan);
+route.get("/:id", getOnePaketKemitraan);
+route.post("/", upload.array("gambar", 10), createPaketKemitraan);
+route.put("/:id", upload.array("gambar", 10), updatePaketKemitraan);
+route.delete("/:id", deletePaketKemitraan);
 
 module.exports = route;

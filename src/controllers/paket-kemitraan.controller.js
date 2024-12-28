@@ -27,23 +27,29 @@ const getOnePaketKemitraan = async (req, res) => {
 const createPaketKemitraan = async (req, res) => {
 	try {
 		const { jenis_kemitraan, ukuran, harga } = req.body;
-		const filePath = req.file.path;
-		const result = await cloudinary.uploader.upload(filePath);
-		const gambar = result.secure_url;
+		const files = req.files; // Assuming multiple files are uploaded
+
+		console.log(req.body);
+		console.log(files);
+
+		const gambarUrls = [];
+
+		for (const file of files) {
+			const result = await cloudinary.uploader.upload(file.path);
+			gambarUrls.push({ url: result.secure_url });
+		}
 
 		const menu = await Paket_Kemitraan.create({
 			jenis_kemitraan,
 			ukuran,
 			harga,
-			gambar,
+			gambar: JSON.stringify(gambarUrls),
 		});
-
-		fs.unlinkSync(filePath);
 
 		return res.status(201).json(menu);
 	} catch (error) {
-		if (req.file) {
-			fs.unlinkSync(req.file.path);
+		if (req.files) {
+			req.files.forEach((file) => fs.unlinkSync(file.path));
 		}
 		res.status(500).json({ message: error.message });
 	}
@@ -54,7 +60,6 @@ const updatePaketKemitraan = async (req, res) => {
 		const { id } = req.params;
 		const { jenis_kemitraan, ukuran, harga } = req.body;
 
-    console.log(req.body);
 		let gambar;
 
 		const paket_kemitraan = await Paket_Kemitraan.findOne({ where: { id } });

@@ -8,10 +8,10 @@ const {
 	deleteAkun,
 } = require("../controllers/akun.controller");
 
-route.get("/akuns", getAllAkuns);
-route.get("/akun/:id", getOneAkun);
-route.post("/akun", createAkun);
-route.put("/akun/:id", updateAkun);
-route.delete("/akun/:id", deleteAkun);
+route.get("/", getAllAkuns);
+route.get("/:id", getOneAkun);
+route.post("/", createAkun);
+route.put("/:id", updateAkun);
+route.delete("/:id", deleteAkun);
 
 module.exports = route;

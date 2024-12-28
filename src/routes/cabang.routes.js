@@ -8,10 +8,10 @@ const {
 	deleteCabang,
 } = require("../controllers/cabang.controller");
 
-route.get("/cabangs", getAllCabangs);
-route.get("/cabang/:id", getOneCabang);
-route.post("/cabang", createCabang);
-route.put("/cabang/:id", updateCabang);
-route.delete("/cabang/:id", deleteCabang);
+route.get("/", getAllCabangs);
+route.get("/:id", getOneCabang);
+route.post("/", createCabang);
+route.put("/:id", updateCabang);
+route.delete("/:id", deleteCabang);
 
 module.exports = route;

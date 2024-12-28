@@ -7,10 +7,10 @@ const {
 	deleteKemitraan,
 } = require("../controllers/kemitraan.controller");
 
-route.get("/kemitraans", getAllKemitraan);
-route.get("/kemitraan/:id", getOneKemitraan);
-route.post("/kemitraan", createKemitraan);
-route.put("/kemitraan/:id", updateKemitraan);
-route.delete("/kemitraan/:id", deleteKemitraan);
+route.get("/", getAllKemitraan);
+route.get("/:id", getOneKemitraan);
+route.post("/", createKemitraan);
+route.put("/:id", updateKemitraan);
+route.delete("/:id", deleteKemitraan);
 
 module.exports = route;
