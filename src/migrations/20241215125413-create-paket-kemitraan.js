@@ -16,7 +16,7 @@ module.exports = {
 				type: Sequelize.STRING,
 			},
 			gambar: {
-				type: Sequelize.STRING,
+				type: Sequelize.TEXT,
 			},
       ukuran: {
         type: Sequelize.STRING,

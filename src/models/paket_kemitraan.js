@@ -15,7 +15,7 @@ module.exports = (sequelize, DataTypes) => {
   }
   Paket_Kemitraan.init({
     jenis_kemitraan: DataTypes.STRING,
-    gambar: DataTypes.STRING,
+    gambar: DataTypes.TEXT,
     ukuran: DataTypes.STRING,
     harga: DataTypes.STRING
   }, {
