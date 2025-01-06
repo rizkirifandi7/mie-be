@@ -39,13 +39,18 @@ const SignIn = async (req, res) => {
 
 const SignUp = async (req, res) => {
 	try {
-		const { email } = req.body;
+		const { nama, email, password, role } = req.body;
 
 		if (await Akun.findOne({ where: { email } })) {
 			return res.status(400).json({ message: "Email already exists" });
 		}
 
-		const akun = await Akun.create(req.body);
+		const akun = await Akun.create({
+			nama,
+			email,
+			password: await bcrypt.hash(password, 10),
+			role,
+		});
 		if (!akun) {
 			return res.status(400).json({ message: "Failed to create account" });
 		}

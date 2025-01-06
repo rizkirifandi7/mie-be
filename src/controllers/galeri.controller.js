@@ -2,6 +2,27 @@ const { Galeri } = require("../models");
 const fs = require("fs");
 const cloudinary = require("../middleware/cloudinary");
 
+const uploadFileToCloudinary = async (filePath) => {
+	try {
+		const result = await cloudinary.uploader.upload(filePath);
+		return result.secure_url;
+	} catch (error) {
+		throw new Error(`Failed to upload file: ${error.message}`);
+	}
+};
+
+const deleteLocalFile = (filePath) => {
+	if (fs.existsSync(filePath)) {
+		fs.unlinkSync(filePath);
+	}
+};
+
+const validateGaleri = (data) => {
+	if (!data.judul) {
+		throw new Error("Judul is required");
+	}
+};
+
 const getAllGaleri = async (req, res) => {
 	try {
 		const galeri = await Galeri.findAll();
@@ -10,9 +31,10 @@ const getAllGaleri = async (req, res) => {
 			galeri,
 		});
 	} catch (error) {
+		console.error(error);
 		return res.status(500).json({
 			status: "error",
-			message: error.message,
+			message: "Failed to retrieve galeri",
 		});
 	}
 };
@@ -33,41 +55,45 @@ const getGaleriById = async (req, res) => {
 			galeri,
 		});
 	} catch (error) {
+		console.error(error);
 		return res.status(500).json({
 			status: "error",
-			message: error.message,
+			message: "Failed to retrieve galeri",
 		});
 	}
 };
 
 const createGaleri = async (req, res) => {
 	try {
+		validateGaleri(req.body);
+
 		const { judul } = req.body;
 		const filePath = req.file.path;
 
-		const result = await cloudinary.uploader.upload(filePath);
-
-		const gambar = result.secure_url;
+		const gambar = await uploadFileToCloudinary(filePath);
 
 		const galeri = await Galeri.create({
 			judul,
 			gambar,
 		});
 
-		fs.unlinkSync(filePath);
+		deleteLocalFile(filePath);
 
 		return res.status(201).json(galeri);
 	} catch (error) {
+		console.error(error);
 		if (req.file) {
-			fs.unlinkSync(req.file.path);
+			deleteLocalFile(req.file.path);
 		}
-		return res.status(500).json({ message: error.message });
+		return res.status(500).json({ message: "Failed to create galeri" });
 	}
 };
 
 const updateGaleri = async (req, res) => {
 	try {
 		const { id } = req.params;
+		validateGaleri(req.body);
+
 		const { judul } = req.body;
 		let gambar;
 
@@ -78,9 +104,8 @@ const updateGaleri = async (req, res) => {
 
 		if (req.file) {
 			const filePath = req.file.path;
-			const result = await cloudinary.uploader.upload(filePath);
-			gambar = result.secure_url;
-			fs.unlinkSync(filePath);
+			gambar = await uploadFileToCloudinary(filePath);
+			deleteLocalFile(filePath);
 		}
 
 		galeri.judul = judul;
@@ -90,10 +115,11 @@ const updateGaleri = async (req, res) => {
 
 		return res.status(200).json(galeri);
 	} catch (error) {
+		console.error(error);
 		if (req.file) {
-			fs.unlinkSync(req.file.path);
+			deleteLocalFile(req.file.path);
 		}
-		res.status(500).json({ message: error.message });
+		res.status(500).json({ message: "Failed to update galeri" });
 	}
 };
 
@@ -109,7 +135,8 @@ const deleteGaleri = async (req, res) => {
 
 		return res.status(200).json({ message: "Galeri deleted successfully" });
 	} catch (error) {
-		return res.status(500).json({ message: error.message });
+		console.error(error);
+		return res.status(500).json({ message: "Failed to delete galeri" });
 	}
 };
 

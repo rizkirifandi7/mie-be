@@ -10,6 +10,8 @@ const feedbackRoutes = require("./feedback.routes");
 const mediaRoutes = require("./media-sosial.routes");
 const galeriRoutes = require("./galeri.routes");
 const beritaRoutes = require("./berita.routes");
+const informasiRoutes = require("./informasi.routes");
+const sertifikatRoutes = require("./sertifikat.routes");
 
 route.use("/menu", menuRoutes);
 route.use("/akun", akunRoutes);
@@ -21,5 +23,7 @@ route.use("/feedback", feedbackRoutes);
 route.use("/media-sosial", mediaRoutes);
 route.use("/galeri", galeriRoutes);
 route.use("/berita", beritaRoutes);
+route.use("/informasi", informasiRoutes);
+route.use("/sertifikat", sertifikatRoutes);
 
 module.exports = route;

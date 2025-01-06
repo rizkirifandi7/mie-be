@@ -1,4 +1,5 @@
 const { Akun } = require("../models");
+const bcrypt = require("bcrypt");
 
 const getAllAkuns = async (req, res) => {
 	try {
@@ -32,16 +33,24 @@ const createAkun = async (req, res) => {
 };
 
 const updateAkun = async (req, res) => {
+	const { id } = req.params;
+	const { nama, password, email, role } = req.body;
 	try {
-		const { id } = req.params;
-		const [updated] = await Akun.update(req.body, { where: { id } });
-		if (!updated) {
+		const akun = await Akun.findByPk(id);
+		if (!akun) {
 			return res.status(404).json({ message: "Akun not found" });
 		}
-		const updatedAkun = await Akun.findOne({ where: { id } });
-		res.status(200).json(updatedAkun);
+
+		await akun.update({
+			nama,
+			password: await bcrypt.hash(password, 10),
+			email,
+			role,
+		});
+
+		res.status(200).json(akun);
 	} catch (error) {
-		res.status(500).json({ message: error.message });
+		return res.status(500).json({ message: error.message });
 	}
 };
 
