@@ -13,7 +13,7 @@ module.exports = (sequelize, DataTypes) => {
 	}
 	Sertifikat.init(
 		{
-			keterangan: DataTypes.STRING,
+			keterangan: DataTypes.TEXT,
 			gambar: DataTypes.STRING,
 		},
 		{

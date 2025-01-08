@@ -12,6 +12,9 @@ const galeriRoutes = require("./galeri.routes");
 const beritaRoutes = require("./berita.routes");
 const informasiRoutes = require("./informasi.routes");
 const sertifikatRoutes = require("./sertifikat.routes");
+const berandaRoutes = require("./beranda.routes");
+const bannerRoutes = require("./banner.routes");
+const testimoniRoutes = require("./testimoni.routes");
 
 route.use("/menu", menuRoutes);
 route.use("/akun", akunRoutes);
@@ -25,5 +28,8 @@ route.use("/galeri", galeriRoutes);
 route.use("/berita", beritaRoutes);
 route.use("/informasi", informasiRoutes);
 route.use("/sertifikat", sertifikatRoutes);
+route.use("/beranda", berandaRoutes);
+route.use("/banner", bannerRoutes);
+route.use("/testimoni", testimoniRoutes);
 
 module.exports = route;

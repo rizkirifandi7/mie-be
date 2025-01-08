@@ -42,7 +42,7 @@ const getBeritaById = async (req, res) => {
 
 const createBerita = async (req, res) => {
 	try {
-		const { judul, isi } = req.body;
+		const { judul, isi, tipe } = req.body;
 		const filePath = req.file.path;
 
 		const result = await cloudinary.uploader.upload(filePath);
@@ -52,6 +52,7 @@ const createBerita = async (req, res) => {
 			judul: judul || "",
 			isi: isi || "",
 			gambar: gambar || "",
+			tipe: tipe || "",
 		});
 
 		fs.unlinkSync(filePath);
@@ -68,7 +69,7 @@ const createBerita = async (req, res) => {
 const updateBerita = async (req, res) => {
 	try {
 		const { id } = req.params;
-		const { judul, isi } = req.body;
+		const { judul, isi, tipe } = req.body;
 		let gambar;
 
 		const berita = await Berita.findByPk(id);
@@ -83,7 +84,7 @@ const updateBerita = async (req, res) => {
 			gambar = berita.gambar;
 		}
 
-		const updatedBerita = await berita.update({ judul, isi, gambar });
+		const updatedBerita = await berita.update({ judul, isi, gambar, tipe });
 
 		if (req.file) {
 			fs.unlinkSync(req.file.path);

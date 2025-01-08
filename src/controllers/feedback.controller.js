@@ -40,6 +40,7 @@ const getFeedbackById = async (req, res) => {
 
 const createFeedback = async (req, res) => {
 	const { nama, nomor_telepon, kritik, saran } = req.body;
+
 	try {
 		const feedback = await Feedback.create({
 			nama,
