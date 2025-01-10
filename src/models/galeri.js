@@ -14,6 +14,7 @@ module.exports = (sequelize, DataTypes) => {
 	Galeri.init(
 		{
 			judul: DataTypes.STRING,
+			deskripsi: DataTypes.TEXT,
 			gambar: DataTypes.STRING,
 		},
 		{
@@ -23,3 +24,4 @@ module.exports = (sequelize, DataTypes) => {
 	);
 	return Galeri;
 };
+

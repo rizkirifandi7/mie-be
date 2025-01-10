@@ -67,13 +67,14 @@ const createGaleri = async (req, res) => {
 	try {
 		validateGaleri(req.body);
 
-		const { judul } = req.body;
+		const { judul, deskripsi } = req.body;
 		const filePath = req.file.path;
 
 		const gambar = await uploadFileToCloudinary(filePath);
 
 		const galeri = await Galeri.create({
 			judul,
+			deskripsi,
 			gambar,
 		});
 
@@ -94,7 +95,7 @@ const updateGaleri = async (req, res) => {
 		const { id } = req.params;
 		validateGaleri(req.body);
 
-		const { judul } = req.body;
+		const { judul, deskripsi } = req.body;
 		let gambar;
 
 		const galeri = await Galeri.findByPk(id);
@@ -110,6 +111,7 @@ const updateGaleri = async (req, res) => {
 
 		galeri.judul = judul;
 		galeri.gambar = gambar;
+		galeri.deskripsi = deskripsi;
 
 		await galeri.save();
 
