@@ -91,16 +91,58 @@ const getOnePaketKemitraan = async (req, res) => {
 	try {
 		const { id } = req.params;
 		const paketKemitraan = await Paket_Kemitraan.findOne({ where: { id } });
+
 		if (!paketKemitraan) {
 			return res.status(404).json({ message: "Paket Kemitraan not found" });
 		}
+
+		let parsedGambar;
+		try {
+			const rawGambar = JSON.parse(paketKemitraan.gambar || "[]");
+
+			if (Array.isArray(rawGambar) && typeof rawGambar[0] === "object") {
+				parsedGambar = rawGambar.map((img) => ({
+					url: img.path,
+					path: img.path,
+				}));
+			} else if (typeof rawGambar === "string" && rawGambar.includes("path")) {
+				const innerJson = JSON.parse(rawGambar);
+				parsedGambar = innerJson.map((img) => ({
+					url: img.path,
+					path: img.path,
+				}));
+			} else if (typeof rawGambar === "string" && rawGambar.includes("http")) {
+				parsedGambar = [
+					{
+						url: rawGambar,
+						path: rawGambar,
+					},
+				];
+			} else if (Array.isArray(rawGambar)) {
+				parsedGambar = rawGambar.map((img) => ({
+					url: img,
+					path: img,
+				}));
+			}
+		} catch (jsonError) {
+			parsedGambar = paketKemitraan.gambar
+				? [
+						{
+							url: paketKemitraan.gambar,
+							path: paketKemitraan.gambar,
+						},
+				  ]
+				: [];
+		}
+
 		const formattedPaketKemitraan = {
 			id: paketKemitraan.id,
 			jenis_kemitraan: paketKemitraan.jenis_kemitraan,
 			ukuran: paketKemitraan.ukuran,
 			harga: paketKemitraan.harga,
-			gambar: JSON.parse(paketKemitraan.gambar || "[]"),
+			gambar: parsedGambar,
 		};
+
 		res.status(200).json({
 			message: "Paket kemitraan retrieved successfully",
 			data: formattedPaketKemitraan,
@@ -193,17 +235,44 @@ const deletePaketKemitraan = async (req, res) => {
 			return res.status(404).json({ message: "Paket kemitraan not found" });
 		}
 
-		const gambar = JSON.parse(paket_kemitraan.gambar || "[]");
-		const deleted = await Paket_Kemitraan.destroy({ where: { id } });
-		if (!deleted) {
-			return res.status(404).json({ message: "Paket kemitraan not found" });
+		try {
+			// Parse image data
+			const rawGambar = JSON.parse(paket_kemitraan.gambar || "[]");
+			let imageUrls = [];
+
+			// Handle different image data structures
+			if (Array.isArray(rawGambar) && typeof rawGambar[0] === "object") {
+				imageUrls = rawGambar.map((img) => img.path);
+			} else if (typeof rawGambar === "string") {
+				const innerJson = JSON.parse(rawGambar);
+				imageUrls = innerJson.map((img) => img.path);
+			} else if (Array.isArray(rawGambar)) {
+				imageUrls = rawGambar;
+			}
+
+			// Extract public IDs from URLs
+			const publicIds = imageUrls.map((url) => {
+				const splitUrl = url.split("/");
+				const filename = splitUrl[splitUrl.length - 1];
+				return filename.split("?")[0]; // Remove query parameters
+			});
+
+			// Delete images from Cloudinary
+			await Promise.all(
+				publicIds.map(async (publicId) => {
+					await cloudinary.uploader.destroy(publicId);
+				})
+			);
+		} catch (cloudinaryError) {
+			console.error("Error deleting from Cloudinary:", cloudinaryError);
 		}
 
-		await deleteCloudinaryImages(gambar);
+		// Delete database record
+		await Paket_Kemitraan.destroy({ where: { id } });
 
-		res.status(204).json({ message: "Paket kemitraan deleted successfully" });
+		return res.status(204).end();
 	} catch (error) {
-		res.status(500).json({ message: error.message });
+		return res.status(500).json({ message: error.message });
 	}
 };
 

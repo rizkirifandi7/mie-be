@@ -96,11 +96,59 @@ const getGaleriById = async (req, res) => {
 			return res.status(404).json({ message: "Galeri not found" });
 		}
 
+		let parsedGambar;
+		try {
+			// First try to parse the outer JSON string
+			const rawGambar = JSON.parse(galeri.gambar || "[]");
+
+			// Check if it's already an array of objects
+			if (Array.isArray(rawGambar) && typeof rawGambar[0] === "object") {
+				parsedGambar = rawGambar.map((img) => ({
+					url: img.path,
+					path: img.path,
+				}));
+			}
+			// If it's a string containing JSON
+			else if (typeof rawGambar === "string" && rawGambar.includes("path")) {
+				const innerJson = JSON.parse(rawGambar);
+				parsedGambar = innerJson.map((img) => ({
+					url: img.path,
+					path: img.path,
+				}));
+			}
+			// If it's a single URL
+			else if (typeof rawGambar === "string" && rawGambar.includes("http")) {
+				parsedGambar = [
+					{
+						url: rawGambar,
+						path: rawGambar,
+					},
+				];
+			}
+			// Fallback for array of URLs
+			else if (Array.isArray(rawGambar)) {
+				parsedGambar = rawGambar.map((img) => ({
+					url: img,
+					path: img,
+				}));
+			}
+		} catch (jsonError) {
+			// Fallback for single URL string
+			parsedGambar = galeri.gambar
+				? [
+						{
+							url: galeri.gambar,
+							path: galeri.gambar,
+						},
+				  ]
+				: [];
+		}
+
 		const formattedGaleri = {
 			id: galeri.id,
 			judul: galeri.judul,
 			deskripsi: galeri.deskripsi,
-			gambar: JSON.parse(galeri.gambar || "[]"),
+			gambar: parsedGambar,
 			createdAt: galeri.createdAt,
 			updatedAt: galeri.updatedAt,
 		};
@@ -198,9 +246,40 @@ const deleteGaleri = async (req, res) => {
 			return res.status(404).json({ message: "Galeri not found" });
 		}
 
-		const gambar = JSON.parse(galeri.gambar || "[]");
+		try {
+			// Parse image data
+			const rawGambar = JSON.parse(galeri.gambar || "[]");
+			let imageUrls = [];
+
+			// Handle different image data structures
+			if (Array.isArray(rawGambar) && typeof rawGambar[0] === "object") {
+				imageUrls = rawGambar.map((img) => img.path);
+			} else if (typeof rawGambar === "string") {
+				const innerJson = JSON.parse(rawGambar);
+				imageUrls = innerJson.map((img) => img.path);
+			} else if (Array.isArray(rawGambar)) {
+				imageUrls = rawGambar;
+			}
+
+			// Extract public IDs from URLs
+			const publicIds = imageUrls.map((url) => {
+				const splitUrl = url.split("/");
+				const filename = splitUrl[splitUrl.length - 1];
+				return filename.split("?")[0]; // Remove query parameters
+			});
+
+			// Delete images from Cloudinary
+			await Promise.all(
+				publicIds.map(async (publicId) => {
+					await cloudinary.uploader.destroy(publicId);
+				})
+			);
+		} catch (cloudinaryError) {
+			console.error("Error deleting from Cloudinary:", cloudinaryError);
+		}
+
+		// Delete database record
 		await Galeri.destroy({ where: { id } });
-		await deleteCloudinaryImages(gambar);
 
 		return res.status(204).end();
 	} catch (error) {
