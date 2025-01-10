@@ -2,143 +2,209 @@ const { Galeri } = require("../models");
 const fs = require("fs");
 const cloudinary = require("../middleware/cloudinary");
 
-const uploadFileToCloudinary = async (filePath) => {
-	try {
-		const result = await cloudinary.uploader.upload(filePath);
-		return result.secure_url;
-	} catch (error) {
-		throw new Error(`Failed to upload file: ${error.message}`);
-	}
+// Helper functions
+const uploadFilesToCloudinary = async (files) => {
+	return await Promise.all(
+		files.map(async (file) => {
+			try {
+				const result = await cloudinary.uploader.upload(file.path);
+				const autoCropUrl = cloudinary.url(result.public_id, {
+					crop: "auto",
+					gravity: "auto",
+					fetch_format: "auto",
+					quality: "auto",
+				});
+				return { filename: file.originalname, path: autoCropUrl };
+			} catch (error) {
+				throw new Error(
+					`Failed to upload file ${file.originalname}: ${error.message}`
+				);
+			}
+		})
+	);
 };
 
-const deleteLocalFile = (filePath) => {
-	if (fs.existsSync(filePath)) {
-		fs.unlinkSync(filePath);
-	}
+const deleteLocalFiles = (files) => {
+	files.forEach((file) => {
+		if (fs.existsSync(file.path)) {
+			fs.unlinkSync(file.path);
+		}
+	});
 };
 
-const validateGaleri = (data) => {
-	if (!data.judul) {
-		throw new Error("Judul is required");
+const deleteCloudinaryImages = async (images) => {
+	for (const image of images) {
+		const publicId = image.path.split("/").pop().split(".")[0];
+		await cloudinary.uploader.destroy(publicId);
 	}
 };
 
 const getAllGaleri = async (req, res) => {
 	try {
-		const galeri = await Galeri.findAll();
+		const galeriList = await Galeri.findAll();
+		const formattedGaleri = galeriList.map((galeri) => {
+			let formattedGambar;
+
+			if (!galeri.gambar) {
+				formattedGambar = [];
+			} else if (galeri.gambar.startsWith("[")) {
+				// Handle JSON array of images
+				const parsedGambar = JSON.parse(galeri.gambar);
+				formattedGambar = parsedGambar.map((img) => {
+					return typeof img === "string"
+						? {
+								filename: img.split("/").pop(),
+								path: img,
+						  }
+						: img;
+				});
+			} else {
+				// Handle single image URL
+				formattedGambar = [
+					{
+						filename: galeri.gambar.split("/").pop(),
+						path: galeri.gambar,
+					},
+				];
+			}
+
+			return {
+				id: galeri.id,
+				judul: galeri.judul,
+				deskripsi: galeri.deskripsi,
+				gambar: formattedGambar,
+				createdAt: galeri.createdAt,
+				updatedAt: galeri.updatedAt,
+			};
+		});
+
 		return res.status(200).json({
-			status: "success",
-			galeri,
+			message: "Galeri retrieved successfully",
+			data: formattedGaleri,
 		});
 	} catch (error) {
-		console.error(error);
-		return res.status(500).json({
-			status: "error",
-			message: "Failed to retrieve galeri",
-		});
+		return res.status(500).json({ message: error.message });
 	}
 };
 
 const getGaleriById = async (req, res) => {
-	const { id } = req.params;
 	try {
+		const { id } = req.params;
 		const galeri = await Galeri.findByPk(id);
+
 		if (!galeri) {
-			return res.status(404).json({
-				status: "error",
-				message: "Galeri not found",
-			});
+			return res.status(404).json({ message: "Galeri not found" });
 		}
 
+		const formattedGaleri = {
+			id: galeri.id,
+			judul: galeri.judul,
+			deskripsi: galeri.deskripsi,
+			gambar: JSON.parse(galeri.gambar || "[]"),
+			createdAt: galeri.createdAt,
+			updatedAt: galeri.updatedAt,
+		};
+
 		return res.status(200).json({
-			status: "success",
-			galeri,
+			message: "Galeri retrieved successfully",
+			data: formattedGaleri,
 		});
 	} catch (error) {
-		console.error(error);
-		return res.status(500).json({
-			status: "error",
-			message: "Failed to retrieve galeri",
-		});
+		return res.status(500).json({ message: error.message });
 	}
 };
 
+// Controller methods
 const createGaleri = async (req, res) => {
 	try {
-		validateGaleri(req.body);
-
 		const { judul, deskripsi } = req.body;
-		const filePath = req.file.path;
+		const files = req.files;
 
-		const gambar = await uploadFileToCloudinary(filePath);
+		if (!judul || !deskripsi || !files || files.length === 0) {
+			return res
+				.status(400)
+				.json({ message: "All fields and files are required" });
+		}
 
+		const uploadedFiles = await uploadFilesToCloudinary(files);
 		const galeri = await Galeri.create({
 			judul,
 			deskripsi,
-			gambar,
+			gambar: JSON.stringify(uploadedFiles),
 		});
 
-		deleteLocalFile(filePath);
+		deleteLocalFiles(files);
 
-		return res.status(201).json(galeri);
+		return res.status(201).json({
+			message: "Galeri created successfully",
+			data: {
+				...galeri.toJSON(),
+				gambar: uploadedFiles,
+			},
+		});
 	} catch (error) {
-		console.error(error);
-		if (req.file) {
-			deleteLocalFile(req.file.path);
+		if (req.files) {
+			deleteLocalFiles(req.files);
 		}
-		return res.status(500).json({ message: "Failed to create galeri" });
+		return res.status(500).json({ message: error.message });
 	}
 };
 
 const updateGaleri = async (req, res) => {
 	try {
 		const { id } = req.params;
-		validateGaleri(req.body);
-
 		const { judul, deskripsi } = req.body;
-		let gambar;
 
 		const galeri = await Galeri.findByPk(id);
 		if (!galeri) {
 			return res.status(404).json({ message: "Galeri not found" });
 		}
 
-		if (req.file) {
-			const filePath = req.file.path;
-			gambar = await uploadFileToCloudinary(filePath);
-			deleteLocalFile(filePath);
+		let uploadedFiles = JSON.parse(galeri.gambar || "[]");
+		if (req.files && req.files.length > 0) {
+			const newUploadedFiles = await uploadFilesToCloudinary(req.files);
+			uploadedFiles = newUploadedFiles;
+			deleteLocalFiles(req.files);
+			await deleteCloudinaryImages(JSON.parse(galeri.gambar || "[]"));
 		}
 
-		galeri.judul = judul;
-		galeri.gambar = gambar;
-		galeri.deskripsi = deskripsi;
+		await galeri.update({
+			judul,
+			deskripsi,
+			gambar: JSON.stringify(uploadedFiles),
+		});
 
-		await galeri.save();
-
-		return res.status(200).json(galeri);
+		return res.status(200).json({
+			message: "Galeri updated successfully",
+			data: {
+				...galeri.toJSON(),
+				gambar: uploadedFiles,
+			},
+		});
 	} catch (error) {
-		console.error(error);
-		if (req.file) {
-			deleteLocalFile(req.file.path);
+		if (req.files) {
+			deleteLocalFiles(req.files);
 		}
-		res.status(500).json({ message: "Failed to update galeri" });
+		return res.status(500).json({ message: error.message });
 	}
 };
 
 const deleteGaleri = async (req, res) => {
-	const { id } = req.params;
 	try {
+		const { id } = req.params;
 		const galeri = await Galeri.findByPk(id);
+
 		if (!galeri) {
 			return res.status(404).json({ message: "Galeri not found" });
 		}
 
-		await galeri.destroy();
+		const gambar = JSON.parse(galeri.gambar || "[]");
+		await Galeri.destroy({ where: { id } });
+		await deleteCloudinaryImages(gambar);
 
-		return res.status(200).json({ message: "Galeri deleted successfully" });
+		return res.status(204).end();
 	} catch (error) {
-		console.error(error);
-		return res.status(500).json({ message: "Failed to delete galeri" });
+		return res.status(500).json({ message: error.message });
 	}
 };
 

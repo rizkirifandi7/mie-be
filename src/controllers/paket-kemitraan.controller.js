@@ -43,13 +43,41 @@ const deleteCloudinaryImages = async (images) => {
 const getAllPaketKemitraan = async (req, res) => {
 	try {
 		const paketKemitraan = await Paket_Kemitraan.findAll();
-		const formattedPaketKemitraan = paketKemitraan.map((paket) => ({
-			id: paket.id,
-			jenis_kemitraan: paket.jenis_kemitraan,
-			ukuran: paket.ukuran,
-			harga: paket.harga,
-			gambar: JSON.parse(paket.gambar || "[]"),
-		}));
+		const formattedPaketKemitraan = paketKemitraan.map((paket) => {
+			let formattedGambar;
+
+			if (!paket.gambar) {
+				formattedGambar = [];
+			} else if (paket.gambar.startsWith("[")) {
+				// Handle JSON array of images
+				const parsedGambar = JSON.parse(paket.gambar);
+				formattedGambar = parsedGambar.map((img) => {
+					return typeof img === "string"
+						? {
+								filename: img.split("/").pop(),
+								path: img,
+						  }
+						: img;
+				});
+			} else {
+				// Handle single image URL
+				formattedGambar = [
+					{
+						filename: paket.gambar.split("/").pop(),
+						path: paket.gambar,
+					},
+				];
+			}
+
+			return {
+				id: paket.id,
+				jenis_kemitraan: paket.jenis_kemitraan,
+				ukuran: paket.ukuran,
+				harga: paket.harga,
+				gambar: formattedGambar,
+			};
+		});
+
 		res.status(200).json({
 			message: "Paket kemitraan retrieved successfully",
 			data: formattedPaketKemitraan,

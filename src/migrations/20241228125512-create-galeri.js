@@ -12,11 +12,11 @@ module.exports = {
 			judul: {
 				type: Sequelize.STRING,
 			},
-			deskrpsi: {
+			deskripsi: {
 				type: Sequelize.TEXT,
 			},
 			gambar: {
-				type: Sequelize.STRING,
+				type: Sequelize.TEXT,
 			},
 			createdAt: {
 				allowNull: false,
