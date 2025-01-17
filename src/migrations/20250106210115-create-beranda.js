@@ -15,9 +15,12 @@ module.exports = {
 			deskripsi: {
 				type: Sequelize.TEXT,
 			},
-      gambar: {
-        type: Sequelize.STRING,
-      },
+			nomor: {
+				type: Sequelize.STRING,
+			},
+			gambar: {
+				type: Sequelize.STRING,
+			},
 			background: {
 				type: Sequelize.STRING,
 			},
@@ -35,3 +38,4 @@ module.exports = {
 		await queryInterface.dropTable("Berandas");
 	},
 };
+

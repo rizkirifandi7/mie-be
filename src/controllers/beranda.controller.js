@@ -40,7 +40,7 @@ const getBerandaById = async (req, res) => {
 
 const createBeranda = async (req, res) => {
 	try {
-		const { judul, deskripsi } = req.body;
+		const { judul, deskripsi, nomor } = req.body;
 
 		// Access files from req.files
 		const gambarFile = req.files.gambar?.[0];
@@ -62,6 +62,7 @@ const createBeranda = async (req, res) => {
 		const beranda = await Beranda.create({
 			judul,
 			deskripsi,
+			nomor,
 			gambar: gambarUpload.secure_url,
 			background: backgroundUpload.secure_url,
 		});
@@ -92,7 +93,7 @@ const createBeranda = async (req, res) => {
 const updateBeranda = async (req, res) => {
 	try {
 		const { id } = req.params;
-		const { judul, deskripsi } = req.body;
+		const { judul, deskripsi, nomor } = req.body;
 
 		// Temukan data Beranda berdasarkan ID
 		const beranda = await Beranda.findOne({ where: { id } });
@@ -143,6 +144,7 @@ const updateBeranda = async (req, res) => {
 		await beranda.update({
 			judul: judul || beranda.judul,
 			deskripsi: deskripsi || beranda.deskripsi,
+			nomor: nomor || beranda.nomor,
 			gambar,
 			background,
 		});

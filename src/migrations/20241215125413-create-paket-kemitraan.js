@@ -15,12 +15,15 @@ module.exports = {
 			harga: {
 				type: Sequelize.STRING,
 			},
+			deskripsi: {
+				type: Sequelize.TEXT,
+			},
 			gambar: {
 				type: Sequelize.TEXT,
 			},
-      ukuran: {
-        type: Sequelize.STRING,
-      },
+			ukuran: {
+				type: Sequelize.STRING,
+			},
 			createdAt: {
 				allowNull: false,
 				type: Sequelize.DATE,
@@ -35,3 +38,4 @@ module.exports = {
 		await queryInterface.dropTable("Paket_Kemitraans");
 	},
 };
+

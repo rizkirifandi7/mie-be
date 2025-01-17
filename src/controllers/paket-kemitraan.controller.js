@@ -75,6 +75,7 @@ const getAllPaketKemitraan = async (req, res) => {
 				ukuran: paket.ukuran,
 				harga: paket.harga,
 				gambar: formattedGambar,
+				deskripsi: paket.deskripsi,
 			};
 		});
 
@@ -141,6 +142,7 @@ const getOnePaketKemitraan = async (req, res) => {
 			ukuran: paketKemitraan.ukuran,
 			harga: paketKemitraan.harga,
 			gambar: parsedGambar,
+			deskripsi: paketKemitraan.deskripsi,
 		};
 
 		res.status(200).json({
@@ -154,7 +156,7 @@ const getOnePaketKemitraan = async (req, res) => {
 
 const createPaketKemitraan = async (req, res) => {
 	try {
-		const { jenis_kemitraan, ukuran, harga } = req.body;
+		const { jenis_kemitraan, ukuran, harga, deskripsi } = req.body;
 		const files = req.files;
 
 		if (!jenis_kemitraan || !ukuran || !harga || !files || files.length === 0) {
@@ -168,6 +170,7 @@ const createPaketKemitraan = async (req, res) => {
 			jenis_kemitraan,
 			ukuran,
 			harga,
+			deskripsi,
 			gambar: JSON.stringify(uploadedFiles),
 		});
 
@@ -189,8 +192,10 @@ const createPaketKemitraan = async (req, res) => {
 const updatePaketKemitraan = async (req, res) => {
 	try {
 		const { id } = req.params;
-		const { jenis_kemitraan, ukuran, harga } = req.body;
+		const { jenis_kemitraan, ukuran, harga, deskripsi } = req.body;
 		const paket_kemitraan = await Paket_Kemitraan.findOne({ where: { id } });
+
+		console.log("Existing Paket Kemitraan:", paket_kemitraan);
 
 		if (!paket_kemitraan) {
 			return res
@@ -198,30 +203,41 @@ const updatePaketKemitraan = async (req, res) => {
 				.json({ message: "Paket kemitraan tidak ditemukan" });
 		}
 
-		let uploadedFiles = JSON.parse(paket_kemitraan.gambar || "[]");
+		let uploadedFiles;
+		try {
+			uploadedFiles = JSON.parse(paket_kemitraan.gambar || "[]");
+		} catch (e) {
+			console.error("Error parsing gambar field:", e);
+			uploadedFiles = [];
+		}
+
 		if (req.files && req.files.length > 0) {
 			const newUploadedFiles = await uploadFilesToCloudinary(req.files);
-			uploadedFiles = newUploadedFiles;
+			uploadedFiles = [...uploadedFiles, ...newUploadedFiles];
 			deleteLocalFiles(req.files);
 			await deleteCloudinaryImages(JSON.parse(paket_kemitraan.gambar || "[]"));
 		}
 
 		await paket_kemitraan.update({
 			jenis_kemitraan,
+			deskripsi,
 			ukuran,
 			harga,
 			gambar: JSON.stringify(uploadedFiles),
 		});
 
+		console.log("Updated Paket Kemitraan:", paket_kemitraan);
+
 		res.status(200).json({
 			message: "Paket kemitraan berhasil diperbarui",
-			body: { jenis_kemitraan, ukuran, harga },
+			body: { jenis_kemitraan, ukuran, harga, deskripsi },
 			files: uploadedFiles,
 		});
 	} catch (error) {
 		if (req.files) {
 			deleteLocalFiles(req.files);
 		}
+		console.error("Error updating paket kemitraan:", error);
 		res.status(500).json({ message: error.message });
 	}
 };
