@@ -11,6 +11,7 @@ module.exports = {
 					gambar:
 						"https://res.cloudinary.com/de8yvsvwj/image/upload/v1736453590/ub58ysdvxskip2a1ffqg.png",
 					ukuran: "6x4m",
+					deskripsi: "<p>Paket kemitraan 2</p>",
 					harga: 12000000,
 					createdAt: new Date(),
 					updatedAt: new Date(),
@@ -20,6 +21,7 @@ module.exports = {
 					gambar:
 						"https://res.cloudinary.com/de8yvsvwj/image/upload/v1736453590/ub58ysdvxskip2a1ffqg.png",
 					ukuran: "10x6m",
+					deskripsi: "<p>Paket kemitraan 2</p>",
 					harga: 24000000,
 					createdAt: new Date(),
 					updatedAt: new Date(),
